@@ -1,28 +1,12 @@
-CC = g++
-CFLAGS = -std=c++17 -Wall -Wextra
+CC = gcc
+CFLAGS = -Wall -Iinclude
 LIBS = -lncurses
 
-# 源文件列表
-SRC = $(wildcard src/*.cpp)
-OBJ = $(SRC:.cpp=.o)
-HEADERS = $(wildcard include/*.h)
+# 添加 setColor.o
+OBJS = src/main.o src/command.o src/setColor.o
 
-# 最终目标
-smnicim: $(OBJ)
-	$(CC) -o $@ $^ $(LIBS)
+smnicim: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
-# 编译规则
-%.o: %.cpp $(HEADERS)
-	$(CC) $(CFLAGS) -Iinclude -c -o $@ $<
-
-# 清理
-clean:
-	rm -f src/*.o smnicim
-
-# 安装到系统
-install: smnicim
-	cp smnicim /usr/local/bin/
-
-# 运行测试
-run: smnicim
-	./smnicim
+%.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<

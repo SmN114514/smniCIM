@@ -1,0 +1,5 @@
+smniCIM help doc
+====================
+q/quit  quit smniCIM editor.
+w       write into the file.
+wq      save and quit. 

@@ -1,16 +1,25 @@
+
+#include "../include/editor.h"
+#include "../include/command.h"
+
 #include <stdlib.h>
 #include <ncurses.h>
 #include <string.h>
 
 #include <ctype.h>
+#include "../include/setColor.h"
 
-
-#define MLINES 1024
-#define MCOLS 1024
 #define Gunmu " "
-char text[MLINES][MCOLS]; //缓冲区
-
+/*
+currentMode == 1 插入模式
+currentMode == 2 命令模式
+currentMode == 0 等待输入a或者按下“:”的空白模式
+*/
 int show_welcome = 1;
+int currentMode;
+char status_msg[256] = "";
+int status_color = COLOR_NORMAL;
+char text[MLINES][MCOLS];  // 文本缓冲区
 int curX = 0, curY = 0;
 
 void center_print(int line, const char* msg) {
@@ -33,7 +42,7 @@ void init_text(){
 	/*
 	 * 初始化一下编辑区 每行都为空
 	 * */
-	text[i][0] = '\0';
+	//text[i][0] = '\0';
 	for(int i = 0; i < MLINES; i++){
 
 		text[i][MCOLS - 1] = '\0'; //糊
@@ -41,6 +50,8 @@ void init_text(){
 	}
 
 }
+
+
 
 void display_text(){
 	clear();
@@ -56,7 +67,7 @@ void display_text(){
             }
         }
     }
-    mvprintw(LINES - 1, 0, "Line:%d Col:%d | Press ESC to quit", curY+1, curX+1);
+    show_status_bar(currentMode, curY+1, curX+1);
     move(curY, curX);
     refresh();
 
@@ -83,7 +94,7 @@ void move_cursor(int y, int x) {
 }
 
 
-void insert_char(int chars){
+void insert_char(char chars){
 	int length = strlen(text[curY]);	
 	if(length < MCOLS - 1){
 		memmove(&text[curY][curX + 1],&text[curY][curX],length - curX + 1);
@@ -118,21 +129,47 @@ int main(){
 	noecho();
 	keypad(stdscr,TRUE);
 
+	init_colors();
 
 	init_text();
 	display_text();
 
 	int chars;
 	// main loop
-	while((chars = getch()) != 27){
+	while(1){
+		chars = getch();
+		//处理ESC
+		if(chars == 27){
+			if(currentMode == 1 || currentMode == 2){ 
+				currentMode = 0;
+				mvprintw(LINES-1,0,Gunmu);//清空状态栏
+			}
+			else{
+			break;
+			}
+		}	
+		
+		//处理模式切换
+		if(currentMode == 0){
+			if(chars == 'a'){
+				currentMode = 1;
+				mvprintw(LINES-1,0,"INSERT MODE");
+			}
+			else if (chars == ':'){
+                open_CMD();
+			
+			}      // 直接调用命令模式函数
+
+		}
+
 		switch(chars){
 			case KEY_UP: move_cursor(curY-1,curX);break;
 			case KEY_DOWN: move_cursor(curY+1,curX); break;
 			case KEY_LEFT: move_cursor(curY,curX-1); break;
 			case KEY_RIGHT: move_cursor(curY,curX+1); break;
 			case 8:   // Backspace
-            case 127: // Delete (某些系统)
-            case KEY_BACKSPACE:  del_char();break; // backSpace(?
+            case 127: // Delete (某些系统) 
+            case KEY_BACKSPACE:  del_char();break; // backSpace（?
 			case 10:
 				if(curY < MLINES - 1) {
 						int length = strlen(text[curY]);
@@ -147,7 +184,7 @@ int main(){
 					}
 			
 				break; //enter!
-		
+			//case 
 			default: if(isprint(chars)) insert_char(chars);
 		}
 
